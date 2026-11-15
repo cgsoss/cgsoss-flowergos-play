@@ -1036,10 +1036,22 @@ const wallet = (() => {
  const prefix='flowergos-web-round-v1-'+playerId+'-';
  const balanceKey='flowergos-web-money-v1-'+playerId;
  const format=new Intl.NumberFormat('ko-KR');
- const runner=window.google?.script?.run;
- const rpc=(name,...args)=>new Promise((resolve,reject)=>{
-  runner.withSuccessHandler(resolve).withFailureHandler(reject)[name](...args);
- });
+ const endpoint='https://script.google.com/macros/s/AKfycbxAvr12dJ8yLlPyqx5EUq7o1Xb1VeDqD0WaStX99yw5ns0IqYdvvuOzZduckvPYOD4k/exec';
+ async function requestWallet(rounds){
+  const response=await fetch(endpoint,{
+   method:'POST',
+   headers:{'Content-Type':'text/plain;charset=UTF-8'},
+   credentials:'omit',
+   body:JSON.stringify({playerId,rounds})
+  });
+  if(!response.ok)throw new Error('게임머니 서버에 연결할 수 없어요.');
+  const data=await response.json();
+  if(!data.ok||!Number.isSafeInteger(data.balance)||data.balance<0||
+     !Array.isArray(data.accepted)||!rounds.every(round=>data.accepted.includes(round.id))){
+   throw new Error('게임머니 응답이 올바르지 않아요.');
+  }
+  return data;
+ }
  let balance=Number(get(balanceKey)??10000);
  let busy=false;
  let status='잔액 확인 중';
@@ -1055,17 +1067,17 @@ const wallet = (() => {
  function update(){
   $('moneyBalance').textContent=(knownBalance?format.format(balance):'—')+'냥';
   $('moneyStatus').textContent=status;
-  $('moneyRetry').hidden=busy||!runner||status==='시트 저장 완료';
+  $('moneyRetry').hidden=busy||status==='시트 저장 완료';
  }
  async function sync(){
-  if(busy||!runner)return;
+  if(busy)return;
   busy=true;
   status='시트에 연결 중';
   update();
   try{
    let batch=pending().slice(0,50);
    do{
-    const data=batch.length?await rpc('syncWallet',playerId,batch):await rpc('loadWallet',playerId);
+    const data=await requestWallet(batch);
     balance=data.balance;
     knownBalance=true;
     set(balanceKey,String(balance));
@@ -1081,7 +1093,6 @@ const wallet = (() => {
   }
  }
  function record(winner,myScore,otherScore,target){
-  if(!runner)return;
   const id=makeId();
   const result=winner==='player'?'win':winner==='ai'?'loss':'draw';
   const points=result==='draw'?0:result==='win'?myScore:otherScore;
@@ -1089,11 +1100,6 @@ const wallet = (() => {
   sync();
  }
  function open(){
-  if(!runner){
-   status='웹 주소로 접속하면 잔액이 저장돼요';
-   update();
-   return;
-  }
   $('moneyRetry').addEventListener('click',sync);
   window.addEventListener('online',sync);
   window.addEventListener('focus',sync);
