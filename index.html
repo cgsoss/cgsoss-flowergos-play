@@ -587,7 +587,7 @@ const DIFFICULTIES={
  normal:{label:'중급',strategy:'match',baseChance:.65,miss:.20},
  expert:{label:'고급',strategy:'score',baseChance:.85,miss:0}
 };
-let soundOn=false,voiceOn=false,bigOn=false,showMatches=true,difficulty='beginner',audioContext=null,aiTimer=null;
+let soundOn=true,voiceOn=true,bigOn=false,showMatches=true,difficulty='beginner',audioContext=null,aiTimer=null;
 let cardLabelsOn=false;
 const pointRates=[100,200,300,400,500,600,700,800,900,1000];
 const numberFormat=new Intl.NumberFormat('ko-KR');
@@ -596,8 +596,8 @@ let nextPointRate=100;
 let difficultyTier=2;
 try {
  bigOn=localStorage.getItem('flowergos-big')==='1';
- soundOn=localStorage.getItem('flowergos-sound')==='1';
- voiceOn=localStorage.getItem('flowergos-voice')==='1';
+ soundOn=localStorage.getItem('flowergos-sound')!=='0';
+ voiceOn=localStorage.getItem('flowergos-voice')!=='0';
  cardLabelsOn=localStorage.getItem('flowergos-card-labels')==='1';
  if(localStorage.getItem('flowergos-target')==='5')nextTarget=5;
  const storedRate=Number(localStorage.getItem('flowergos-point-rate'));
